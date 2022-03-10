@@ -4,7 +4,8 @@ section .text
 ;-------------------------------------------------------------------------
 ; MAIN SECTION
 ;-------------------------------------------------------------------------
-_start:     push        33
+_start:     
+            push        33
             push        100
             push        3802
             push        str_to_prnt
@@ -21,7 +22,8 @@ _start:     push        33
 
 ;-------------------------------------------------------------------------
 ;   putc
-;   print one char to the stdout.
+;   print one char to the stdout. Attention: this programm uses 
+;   bufferisation and don't flush it's bufffer on last call
 ;   
 ;   Expects:    Character in the stack
 ;   Note:       CDECL
@@ -32,24 +34,68 @@ putc:
     push    rbp
     mov     rbp, rsp
 
-    push    rdi 
     push    rsi 
+    push    rdi
     push    rdx
+    push    rbx
 
-    mov     rax, 1
-    mov     rdi, 1
-    mov     rsi, rbp
-    add     rsi, 16
-    mov     rdx, 1
-    syscall
+    mov rax, [buf_cur_len]
 
-    pop     rdx 
+    mov     rdi, [buf_cur_len]
+    mov     rsi, buf_len
+    sub     rsi, 1
+
+    cmp rdi, rsi
+    jl .putc_to_buffer
+
+    .drop_buffer:
+        call    FlushBuffer
+        jmp     .putc_to_buffer
+
+    .putc_to_buffer:
+        mov     bl,     byte [rbp + 16]
+        mov     rdi,    buffer
+        add     rdi,    [buf_cur_len]
+        mov     byte    [rdi],  bl
+        add     qword   [buf_cur_len], 1
+
+    pop     rbx
+    pop     rdx
+    pop     rdi
     pop     rsi 
-    pop     rdi 
     pop     rbp
 
     ret
 
+;-------------------------------------------------------------------------
+;   FlushBuffer:
+;   Print's programm buffer to the screen
+;   
+;   Expects:    None
+;   Note:       CDECL            
+;   Destroys:   None
+;-------------------------------------------------------------------------
+FlushBuffer:
+    push    rbp
+    mov     rbp, rsp
+    push    rsi
+    push    rdi
+    
+    mov     rsi, buffer
+    mov     rdx, [buf_cur_len]
+    push    rax
+    push    rcx
+    call PrintBuffer
+    pop     rcx
+    pop     rax
+
+    mov     qword [buf_cur_len], 0
+    
+    pop     rdi
+    pop     rsi
+    pop     rbp
+    
+    ret
 ;-------------------------------------------------------------------------
 ;   PrintBuffer
 ;   prints the given buffer to the console
@@ -83,6 +129,7 @@ printf:
     push    rsi
     push    r9
     push    rbx
+    push    r10
 
     mov     rsi, [rbp + 16]
     mov     rcx, 24             ; first arg offset
@@ -204,11 +251,9 @@ printf:
         jmp .PRINT_SYMBOL
 
     .PRINT_SYMBOL:
-        push    rcx
         push    rax
         call    putc
         pop     rax
-        pop     rcx
         jmp .start_str_processor
     
     .start_str_processor:
@@ -218,6 +263,9 @@ printf:
     jne .sring_processor
 
     .end_printf:
+        call    FlushBuffer
+
+        pop     r10
         pop     rbx
         pop     r9
         pop     rsi
@@ -239,6 +287,9 @@ PrintNum:
     push    rbx
     push    rsi
     push    r9
+
+    ; Flushing buffer because we will need it
+    call    FlushBuffer
 
     xor r9, r9
     mov rsi, buffer + buf_len - 1
@@ -280,14 +331,19 @@ PrintString:
     push    rdi
     push    rsi
     push    rdx
-    push    rax
 
     mov     rsi, [rbp + 16]
-    call    strlen
-    pop     rax
 
-    mov     rdx, rcx
-    call    PrintBuffer
+    jmp .start_str_processor
+    .string_processor:
+        push    rax
+        call    putc
+        add     rsp, 8
+        .start_str_processor:
+        lodsb
+        cmp     rax, 0
+    jne .string_processor
+
 
     pop     rdx
     pop     rsi
@@ -393,13 +449,12 @@ escape_seq: db 0x07     ;   \a 	0x07 	Звуковой сигнал
 ; \" 	0x22 	Двойная кавычка
 ; \\ 	0x5с 	Обратный слеш
 
-buffer      times 256 db '0'
+buffer      times 4096 db 0
 buf_len     equ $ - buffer
-my_ascii    db "0123456789ABCDEF", 0
+buf_cur_len dq  0
+my_ascii    db  "0123456789ABCDEF", 0
 
 ;-------------------------------------------------------------------------
 
 string      db  "I %s %x %d%% %c \n", 0
 str_to_prnt db  "love", 0
-
-; TODO add buferisation
