@@ -1,20 +1,6 @@
-global _start
-
 section .text
-;-------------------------------------------------------------------------
-; MAIN SECTION
-;-------------------------------------------------------------------------
-_start:     
-            push        33
-            push        100
-            push        3802
-            push        str_to_prnt
-            push        string
-            call        printf
-
-            mov         rax, 60                 
-            xor         rdi, rdi                
-            syscall
+global Printf
+extern main
 
 ;-------------------------------------------------------------------------
 ; FUNC SECTION
@@ -123,16 +109,34 @@ PrintBuffer:
 ;   Destroys:   None
 ;-------------------------------------------------------------------------
 
-printf:
-    push    rbp
-    mov     rbp, rsp
-    push    rsi
-    push    r9
-    push    rbx
-    push    r10
+Printf:
+    pop rax
+    push r9
+    push r8
+    push rcx
+    push rdx
+    push rsi
+    push rdi
+    push rax
 
-    mov     rsi, [rbp + 16]
-    mov     rcx, 24             ; first arg offset
+    push rbp 
+    mov  rbp, rsp
+    ; pop  rax
+    ; push r9         ; push first 6 arguments
+    ; push r8         
+    ; push rcx
+    ; push rdx
+    ; push rsi
+    ; push rdi
+    ; push rax         ; save ret addres
+    
+    ; push    rbp
+    ; mov     rbp, rsp
+    ; push    rbx
+    ; push    r10
+    xor     rax, rax
+    mov     rsi, qword [rbp + 16]       ; format line
+    mov     rcx, 24                     ; first arg offset
 
     jmp .start_str_processor
 
@@ -265,11 +269,13 @@ printf:
     .end_printf:
         call    FlushBuffer
 
-        pop     r10
-        pop     rbx
-        pop     r9
-        pop     rsi
+        ; pop     r10
+        ; pop     rbx
         pop     rbp
+
+        pop rax
+        add rsp, 48
+        push rax        ; push ret addres
 
         ret
 
@@ -391,32 +397,32 @@ strlen:
 
 section .data
 
-jmp_table:  dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   a
-            dq    printf.PROCEESS_DIGIT_2                   ;   b
-            dq    printf.PROCESS_CHAR                       ;   c
-            dq    printf.PROCEESS_DIGIT_10                  ;   d
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   e
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   f
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   g
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   h
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   i
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   j
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   k
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   l
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   m
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   n
-            dq    printf.PROCEESS_DIGIT_8                   ;   o
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   p
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   q
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   r
-            dq    printf.PROCEESS_STRING                    ;   s
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   t
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   u
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   v
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   w
-            dq    printf.PROCEESS_DIGIT_16                  ;   x
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   y
-            dq    printf.PRINT_SYMBOL_AFTER_PERCENT         ;   z
+jmp_table:  dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   a
+            dq    Printf.PROCEESS_DIGIT_2                   ;   b
+            dq    Printf.PROCESS_CHAR                       ;   c
+            dq    Printf.PROCEESS_DIGIT_10                  ;   d
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   e
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   f
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   g
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   h
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   i
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   j
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   k
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   l
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   m
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   n
+            dq    Printf.PROCEESS_DIGIT_8                   ;   o
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   p
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   q
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   r
+            dq    Printf.PROCEESS_STRING                    ;   s
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   t
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   u
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   v
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   w
+            dq    Printf.PROCEESS_DIGIT_16                  ;   x
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   y
+            dq    Printf.PRINT_SYMBOL_AFTER_PERCENT         ;   z
 
 
 escape_seq: db 0x07     ;   \a 	0x07 	Звуковой сигнал
@@ -453,8 +459,3 @@ buffer      times 4096 db 0
 buf_len     equ $ - buffer
 buf_cur_len dq  0
 my_ascii    db  "0123456789ABCDEF", 0
-
-;-------------------------------------------------------------------------
-
-string      db  "I %s %x %d%% %c \n", 0
-str_to_prnt db  "love", 0
