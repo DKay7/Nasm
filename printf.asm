@@ -3,6 +3,22 @@ global Printf
 extern main
 
 ;-------------------------------------------------------------------------
+; MACRO SECTION
+;-------------------------------------------------------------------------
+%macro process_number 1 
+        push    rax
+        push    rcx
+        mov     rax, [rbp + rcx]
+        push    %1
+        push    rax
+        call    PrintNum
+        add     rsp, 16
+        pop     rcx
+        pop     rax
+        add     rcx, 8
+%endmacro
+
+;-------------------------------------------------------------------------
 ; FUNC SECTION
 ;-------------------------------------------------------------------------
 
@@ -121,19 +137,7 @@ Printf:
 
     push rbp 
     mov  rbp, rsp
-    ; pop  rax
-    ; push r9         ; push first 6 arguments
-    ; push r8         
-    ; push rcx
-    ; push rdx
-    ; push rsi
-    ; push rdi
-    ; push rax         ; save ret addres
-    
-    ; push    rbp
-    ; mov     rbp, rsp
-    ; push    rbx
-    ; push    r10
+
     xor     rax, rax
     mov     rsi, qword [rbp + 16]       ; format line
     mov     rcx, 24                     ; first arg offset
@@ -179,56 +183,19 @@ Printf:
         jmp     .PRINT_SYMBOL
         
     .PROCEESS_DIGIT_2:
-        push    rax
-        push    rcx
-        mov     rax, [rbp + rcx]
-        push    2
-        push    rax
-        call    PrintNum
-        add     rsp, 16
-        pop     rcx
-        pop     rax
-        add     rcx, 8
-
+        process_number 2
         jmp .start_str_processor
 
     .PROCEESS_DIGIT_8:
-        push    rax
-        push    rcx
-        mov     rax, [rbp + rcx]
-        push    8
-        push    rax
-        call    PrintNum
-        add     rsp, 16
-        pop     rcx
-        pop     rax
-        add     rcx, 8
+        process_number 8
         jmp .start_str_processor
 
     .PROCEESS_DIGIT_10:
-        push    rax
-        push    rcx
-        mov     rax, [rbp + rcx]
-        push    10
-        push    rax
-        call    PrintNum
-        add     rsp, 16
-        pop     rcx
-        pop     rax
-        add     rcx, 8
+        process_number 10
         jmp .start_str_processor
 
     .PROCEESS_DIGIT_16:
-        push    rax
-        push    rcx
-        mov     rax, [rbp + rcx]
-        push    16
-        push    rax
-        call    PrintNum
-        add     rsp, 16
-        pop     rcx
-        pop     rax
-        add     rcx, 8
+        process_number 16
         jmp .start_str_processor
     
     .PROCEESS_STRING:
@@ -269,8 +236,6 @@ Printf:
     .end_printf:
         call    FlushBuffer
 
-        ; pop     r10
-        ; pop     rbx
         pop     rbp
 
         pop rax
