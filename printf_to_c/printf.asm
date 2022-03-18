@@ -1,7 +1,8 @@
-section .text
-global Printf
+default rel
 extern main
+global Printf
 
+section .text
 ;-------------------------------------------------------------------------
 ; MACRO SECTION
 ;-------------------------------------------------------------------------
