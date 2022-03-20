@@ -162,7 +162,9 @@ Printf:
         cmp     al, "\"
         je      .end_process_backslash
 
-        mov     al, byte [escape_seq + rax - "a"]
+        lea     r9,  [escape_seq - "a"]
+        add     rax, r9
+        mov     al,  [r9]
 
         .end_process_backslash:
             jmp     .PRINT_SYMBOL
@@ -175,8 +177,12 @@ Printf:
         cmp     rax, 0          
         je      .end_printf                                         ; string ended
 
-        mov r9, qword [jmp_table + 8 * (rax - "a")]
-        jmp r9
+        lea r9, [jmp_table]
+        sub rax, "a"
+        shl rax, 3
+        add r9, rax
+        ; mov r9, qword [jmp_table + 8 * (rax - "a")]
+        jmp [r9]
     
     .PROCESS_CHAR:
         mov     rax, [rbp + rcx]
@@ -259,6 +265,7 @@ PrintNum:
     push    rbx
     push    rsi
     push    r9
+    push    r10
 
     ; Flushing buffer because we will need it
     call    FlushBuffer
@@ -271,7 +278,9 @@ PrintNum:
     .iterate_over_number:
         xor rdx, rdx
         div rbx
-        mov cl, byte [my_ascii + rdx]
+        lea r10, [my_ascii]
+        add r10, rdx
+        mov cl, byte [r10]
         mov [rsi], byte cl 
         dec rsi
         inc r9
@@ -283,6 +292,7 @@ PrintNum:
     mov rdx, r9
     call PrintBuffer
     
+    pop r10
     pop r9
     pop rsi
     pop rbx
