@@ -15,13 +15,16 @@ main:
     call    add     ; add(6, 10)
 
     mov     rdi, format
-    mov     rsi, rax
+    mov     rsi, str_
+    mov     rdx, 0xEDA
+    mov     rcx, 100
+    mov     r8, 33
     mov     rax, 0
-    call    printf  WRT ..plt; printf(format, eax)
-
+    call    printf  WRT ..plt; printf(format, ...)
     ret
 
 ;-------------------------------------------------------------------------
 
 section .data
-  format db "%d", 10, 0
+  str_   db "love", 0
+  format db "I %s %x %d%%%c", 10, 0
